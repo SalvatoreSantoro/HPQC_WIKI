@@ -1,74 +1,102 @@
-# UninaSoC build system
+# UninaSoC Software Build System
 
-Breve introduzione di cos'è UninSoC con spiegazione dello scopo
-di didattica che c'è alla base delle modifiche e delle aggiunte apportate al progetto.
+My work focused on integrating "risc-v_hands_on" examples on UninaSoC,
+and doing a refactoring of the structure of the software-related part of the platform
+that led to the design of a first version of the HAL.
+In order to run custom code and experiment with low level mechanisms
+like interrupts and peripherals interfacing, every application need to follow
+the convention exposed in the related documentation page:
+https://github.com/MaistoV/UninaSoC/blob/main/sw/SoC/README.md
 
-Breve introduzione a come funzionano alcuni dei meccanismi di build dei quali
-mi sono interessato e fatto uso per andare ad integrare le nuove aggiunte,
-quindi di come UninaSoC effettua la compilazione degli "examples" in modo
-da permettere l'esecuzione di codice sulla piattaforma e di come vengono generati
-i principali file di configurazione per la parte software
-(quindi linker script e uninasoc_config.h da me implementato)
-con riferimento alla documentazione relativa per vari dettagli aggiuntivi:
+Every example code for the platform need to be located in the
+directory "sw/SoC/examples" in order to be compiled with the
+software compilation flow of the system (make sw).
 
-https://github.com/SalvatoreSantoro/UninaSoC/blob/feature/HAL/config/README.md  
-https://github.com/MaistoV/UninaSoC/blob/main/sw/SoC/README.md  
+// Aggiungi immagine cartella examples
 
 # UninaSoC for students: a new backend for risc-v_hands_on
 
 ## Integration
 
-Parlare di come funziona la fase di integrazione che ho fatto, quindi spiegazione
-a grandi linee del makefile di installazione ed esecuzione degli esempi
-e di come ho adattato il codice ad utilizzare la printf di tinyIO
+Respecting the build requirements mentioned above I integrated the examples
+that were previously present in the repository "risc-v_hands_on" to run on the platform.
+The goals were to integrate on UninaSoC both the "full assembly" and "mixed C/assembly" examples 
+originally intended to run respectively on "RARS" and "spike".
 
-## UART and GDB
+// Aggiungi figura integrazione così come scritto in email
 
-Parlare brevemente di com'è possibile ora grazie a questa aggiunta
-far girare gli stessi esempi precedenti di risc-v_hands_on su un processore fisico
-e quindi di come utilizzare l'emulatore di terminale e GDB per eseguire gli esempi
+To run the examples in a bare metal context the code had to be adapted to use "TinyIO" library
+(already present in the build system of UninaSoC) to print directly to screen using
+an UART peripheral and a terminal emulator (PuTTY).
+
+// Screen che ritrae le piccole porzioni di codice cambiate magari
+
+## Installation and running with GDB
+
+Setting up the project and running the code is completely guided in the
+README.md file (in risc-v_hands_on/UninaSoC)
+https://github.com/SalvatoreSantoro/risc-v_hands_on/blob/main/UninaSoC/README.md
+that lists all the steps to reproduce using the Makefile specifically created for 
+this eventuality.
+
+After configuring everything needed, it's possible to run the examples using
+GDB and a terminal emulator.
+
+The source code of the TinyIO library, is recompiled from source (when running make sw)
+on the host machine, in order to allow GDB to find the location of TinyIO's source files
+and make it possible to "step" into the librarie's functions implementations.
+
+// Screen esempio GDB + Screen print a video UART + screen step dentro funzione
 
 
-# PLIC and RISC-V Interrupts
+# State of UninaSoC before refactoring
 
-piccolo approfondimento sul PLIC e sul vettore delle interrupt di RISC-V
-utile anche ad introdurre come l'HAL gestisce le interrupt e cosa mette
-a disposizione per ridefinire gli handler
+Before the refactoring UninaSoC didn't have an HAL and every example needed
+to write initialization code from the ground up, in particular the "interrupts"
+example specified functions to initialize every peripheral of the SoC, locally
+in the example folder.
+The code in this example was used as the foundation for building the HAL
 
-## RISC-V interrupts
-1- Parlare dei registri mtvec, mstatus e mie, e come sono configurati nella routine
-di startup di UninaSoC in modo da configurare le interruzioni  
-2- Parlare di com'è organizzato il vettore delle interruzioni e di come RISC-V
-riesce ad identificare i diversi tipi di interruzioni (esterne, software e timer)
-in modo da chiamare la ISR giusta  
-
-## PLIC
-1- Parlare del PLIC in generale, come funziona e come si configura e utilizza  
-2- Parlare di com'è attualmente configurato e usato in UninaSoC  
+// Screen della struttura dei file esempio interrupt com'era prima
+// Screen del codice com'era prima
 
 # Designing an HAL for UninaSoC
 
 ## Use cases
 
-1- Parlare del fatto che l'HAL è pensato per essere minimale, ben commentata
-e facilmente estendibile in modo da poter essere utilizzata a scopo didattico
-per sperimentare con i meccanismi di gestione delle interrupt su RISC-V  
-2- Parlare della compilazione modulare per ridurre i tempi di compilazione e
-la dimensione dei binari, attraverso file di configurazione opportunamente generato  
-3- Parlare della generalizzazione delle API in modo da accomodare futuri espansioni e
-aggiunte di nuove copie di periferiche già esistenti, es gpio o timer o cambi di configurazione
-in generale.  
+The use cases taken into account were:
+
+1 - The HAL needs to be minimal, well-commented, and easily extensible to support educational use and experimentation with RISC-V interrupt handling.  
+
+2 - The HAL needs to support modular compilation to minimize build time and binary size, using configuration files to include only required components.  
+
+3 - The HAL needs to expose generic APIs that allow for future extension, including support for additional instances of peripherals (e.g., GPIOs, timers) and changes in hardware configuration.
+
+// Snippet codice header + file generato
 
 ## Design Principles
 
-1- Struttura del singolo header "uninasoc.h" per avere una interfaccia semplice  
-2- Parlare di come il file di configurazion "uninasoc_config.h" influenza le fasi
-di compilazione
-3- Parlare di come l'indirizzo base di ogni periferica è ottenuto attravero simboli
-creati dal linker script generato, il che permette all HAL di riadattarsi automaticamente
-in caso di cambio della mappa della memoria del sistema  
-4- Parlare della gestione degli errori durante la configurazione delle periferiche
-in modo da facilitare il debugging e lo sviluppo  
+### Unified Header Interface (uninasoc.h)
+The HAL exposes a single header file, uninasoc.h, to provide a clean interface to developers internally integrating TinyIO library for printf functionality.
+
+### Build-Time Configuration via uninasoc_config.h
+The build process is controlled through a configuration header, "uninasoc_config.h", generated with the config script
+"create_uninasoc_conf_header.py" which dictates which components are included during compilation.
+
+### Peripheral Base Addresses from Linker-Generated Symbols
+Rather than hardcoding peripheral base addresses, the HAL relies on symbols generated by the linker script (already present in the software build system of UninaSoC) to determine these addresses at compile time. This design makes the HAL highly adaptable to changes in the memory map. If the hardware configuration evolves (e.g., peripheral relocation), the HAL can automatically adjust without requiring source code changes, as long as the linker script is updated accordingly.
+
+### Robust Peripheral Configuration and Error Handling
+To facilitate debugging and development, the HAL includes clear and consistent error handling mechanisms during peripheral configuration.
+
+### Redefinition of interrupt handlers
+The HAL exposes the symbol "__irq_handler__" to the user in order to define custom interrupt handlers.
+The user also need follow the naming convention "_ext_handler", "_tim_handler", "_sof_handler" because
+the HAL redefines "weak" default implementation of the handler substituting them with the user custom handlers.
+
+## HAL Architecture
+
+// Inserire schema
 
 ## Example of use
 
@@ -80,3 +108,4 @@ spiegazione dell'esempio delle interrupts
 In generale si può parlare delle parti della HAL da riadattare o estendere
 nel momento in cui si aggiungono nuove periferiche o si rende il PLIC configurabile
 dinamicamente  
+
