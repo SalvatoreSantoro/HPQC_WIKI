@@ -62,8 +62,8 @@ in generale.
 ## Design Principles
 
 1- Struttura del singolo header "uninasoc.h" per avere una interfaccia semplice  
-2- Parlare di come avviene la generazione del file "uninasoc_config.h" e di come esso
-influenza le fasi di compilazione  
+2- Parlare di come il file di configurazion "uninasoc_config.h" influenza le fasi
+di compilazione
 3- Parlare di come l'indirizzo base di ogni periferica è ottenuto attravero simboli
 creati dal linker script generato, il che permette all HAL di riadattarsi automaticamente
 in caso di cambio della mappa della memoria del sistema  
